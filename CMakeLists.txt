@@ -48,15 +48,9 @@ include_directories(
   ${LIBUSB_INCLUDE_DIRS}
 )
 
-add_library(SPxServerScanImgProcess src/SPxServerScanImgProcess.cpp)
-add_dependencies(SPxServerScanImgProcess ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(SPxServerScanImgProcess ${catkin_LIBRARIES})
-
-
 add_executable(radar_monitor_node src/spxppi1.cpp)
 add_dependencies(radar_monitor_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(radar_monitor_node ${catkin_LIBRARIES}
-#SPxServerScanImgProcess
 ${OpenCV_LIBS} 
 /usr/local/SPx/current/Libs/linux/libspx_64.a 
 /usr/local/SPx/current/Libs/linux/libmxlin260_64.a
