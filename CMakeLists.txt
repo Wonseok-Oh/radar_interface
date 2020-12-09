@@ -32,7 +32,6 @@ find_library(SPXQT_5_64 NAMES libspxqt_5_64.a PATHS CMAKE_LIBRARY_PATH STATIC IM
 
 catkin_package(
    CATKIN_DEPENDS roscpp rospy std_msgs
-   INCLUDE_DIRS include
 )
 
 ###########
@@ -53,17 +52,6 @@ add_library(SPxServerScanImgProcess src/SPxServerScanImgProcess.cpp)
 add_dependencies(SPxServerScanImgProcess ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(SPxServerScanImgProcess ${catkin_LIBRARIES})
 
-#add_executable(radar_monitor_node src/main.cpp)
-#add_dependencies(radar_monitor_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#target_link_libraries(radar_monitor_node ${catkin_LIBRAIRES}
-#SPxServerScanImgProcess
-#${OpenCV_LIBS} 
-#/usr/local/SPx/current/Libs/linux/libspx_64.a 
-#/usr/local/SPx/current/Libs/linux/libmxlin260_64.a
-#${ZLIB_LIBRARIES} ${X11_LIBRARIES} Xext Xrender ${X11_Xau_LIB}
-#usb
-#Xcomposite X11 Xt Xaw
-#)
 
 add_executable(radar_monitor_node src/spxppi1.cpp)
 add_dependencies(radar_monitor_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -77,12 +65,9 @@ usb pthread
 Xcomposite X11 Xt Xaw
 )
 
-
-
-add_executable(listener_node src/listener.c)
-add_dependencies(listener_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(listener_node ${catkin_LIBRAIRES})
-
-add_executable(talker_node src/talker.c)
-add_dependencies(talker_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(talker_node ${catkin_LIBRAIRES})
+add_executable(radar_rospub_node src/spxppi_no_gui.cpp)
+add_dependencies(radar_rospub_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(radar_rospub_node ${catkin_LIBRARIES}
+/usr/local/SPx/current/Libs/linux/libspx_64.a
+/usr/local/SPx/current/Libs/linux/libmxlin260_64.a
+usb pthread z)

@@ -295,10 +295,10 @@ int main(int argc,char **argv)
      */ 
     /* We need a bitmap object mapping onto the RadarImage shared memory. */
     DestBitmap = new SPxScDestBitmap();
-    DestBitmap->Create(MAX_WIN_WIDTH, MAX_WIN_HEIGHT, SPX_BITMAP_32BITS, 
+    int bitmapCreated = DestBitmap->Create(MAX_WIN_WIDTH, MAX_WIN_HEIGHT, SPX_BITMAP_32BITS,
 			    (unsigned char*)RadarImage->data,
 			    RadarImage->bytes_per_line);
-
+    printf("bitmapCreated: %d\n", bitmapCreated);
     /* The DestBitmap class needs to know how often we'll update the display,
      * since it needs to calculate fades time.
      */
