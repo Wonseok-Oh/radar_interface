@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="radar_interface_linux" name="radar_ros_driver" type="radar_rospub_node" output="screen">
+  	<param name="max_win_width" value="256"/>
+  	<param name="max_win_height" value="256"/>
+  	<param name="src_ip_addr" value="239.192.43.78"/>
+  	<param name="port" value="4378"/>
+  </node>
+</launch>

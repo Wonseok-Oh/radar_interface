@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>radar_interface</name>
+  <name>radar_interface_linux</name>
   <version>0.0.0</version>
   <description>The radar_interface package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="cstat-pc@todo.todo">cstat-pc</maintainer>
+  <maintainer email="cstat-pc@todo.todo">Wonseok Oh</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->

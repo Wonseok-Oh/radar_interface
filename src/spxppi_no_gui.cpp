@@ -29,6 +29,7 @@
 /* Standard headers. */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 /* SPx headers. */
 #include "SPx.h"
@@ -46,11 +47,12 @@ static void bitmapCallback(SPxScDestBitmap *bitmap, UINT16 changes,
 /*
  * Private variables.
  */
-static int MaxWinWidth = 512;
-static int MaxWinHeight = 512;
+//static int MaxWinWidth = 256;
+//static int MaxWinHeight = 256;
 
 static ros::Publisher* imgPubPtr = NULL;
-
+static bool isInit = false;
+static sensor_msgs::Image img;
 /* The X Image used to hold the client-side radar bitmap. */
 //static XImage *RadarImage;
 
@@ -59,7 +61,12 @@ static ros::Publisher* imgPubPtr = NULL;
 *	Public functions
 *
 **********************************************************************/
-
+void publish_rostopic(const ros::TimerEvent& event){
+	// if not initialized, do nothing
+	if (!isInit) return;
+	imgPubPtr->publish(img);
+	return;
+}
 /*====================================================================
 *
 * main
@@ -77,11 +84,20 @@ static ros::Publisher* imgPubPtr = NULL;
 *===================================================================*/
 int main(int argc, char **argv)
 {
-	ros::init (argc, argv, "radar_interface_node");
-	ros::NodeHandle n;
-	imgPubPtr = new ros::Publisher;
-	*imgPubPtr = n.advertise<sensor_msgs::Image>("radar_image", 1);
+	ros::init(argc, argv, "radar_interface_node");
+	ros::NodeHandle nh;
+	ros::NodeHandle private_nh("~");
+	int max_win_width, max_win_height, port;
+	std::string src_ip_addr;
 
+	private_nh.param("max_win_width", max_win_width, 256);
+	private_nh.param("max_win_height", max_win_height, 256);
+	private_nh.param<std::string>("src_ip_addr", src_ip_addr, std::string("239.192.43.78"));
+	private_nh.param("port", port, 4378);
+	ros::Timer timer = nh.createTimer(ros::Duration(0.1), publish_rostopic);
+
+	imgPubPtr = new ros::Publisher;
+	*imgPubPtr = nh.advertise<sensor_msgs::Image>("radar_image", 1);
 
     printf("\n### Cambridge Pixel SPx Bitmap Demo %s\n\n",SPX_VERSION_STRING);
 
@@ -94,20 +110,14 @@ int main(int argc, char **argv)
 	exit(-1);
     }
 
-    printf("Init Succ\n");
     /* Create the bitmap, which is the destination for the scan converter */
     SPxScDestBitmap *spxBitmap = new SPxScDestBitmap();
-    int bitmapCreated = spxBitmap->Create(MaxWinWidth, MaxWinHeight, SPX_BITMAP_32BITS);
+    int bitmapCreated = spxBitmap->Create(max_win_width, max_win_height, SPX_BITMAP_32BITS);
 
     if( bitmapCreated != 0 ){
     	printf("Failed to create SPxBitmap.\n");
     	exit(-1);
     }
-
-    //SPxScDestBitmap* DestBitmap = new SPxScDestBitmap();
-    //DestBitmap->Create(MaxWinWidth, MaxWinHeight, SPX_BITMAP_32BITS,
-    //			    (unsigned char*)RadarImage->data,
-    //			    RadarImage->bytes_per_line);
 
     /* Register the function that will be called when the bitmap is
      * updated.
@@ -116,7 +126,7 @@ int main(int argc, char **argv)
 
     /* Create the scan converter */
     SPxScSourceLocal *spxSc = new SPxScSourceLocal(spxBitmap);
-    spxSc->SetWinGeom(0,0,MaxWinWidth, MaxWinHeight);
+    spxSc->SetWinGeom(0,0,max_win_width, max_win_height);
 
     /* Create the RIB */
     SPxRIB * spxRib = new SPxRIB(1024*1024);
@@ -131,7 +141,7 @@ int main(int argc, char **argv)
 
     /* Create the network receiver to spxRIB (for general cases) */
    	SPxNetworkReceive *SrcNet = new SPxNetworkReceive(spxRib);
-   	SrcNet->Create("239.192.43.78", 4378);
+   	SrcNet->Create(src_ip_addr.c_str(), port);
 	SrcNet->Enable(TRUE);
 
     /*
@@ -139,7 +149,8 @@ int main(int argc, char **argv)
      * program might create graphics, provide a user interface etc. etc.
      */
     printf("Starting main loop...\n");
-
+    isInit = true;
+    ros::spin();
     while(ros::ok())
     {
 	/* Don't busy loop. */
@@ -192,17 +203,18 @@ static void bitmapCallback(SPxScDestBitmap *bitmap, UINT16 changes,
      * as are the coordinates and size of the box within the bitmap that has
      * changed.
      */
-	sensor_msgs::Image img;
+
 	img.header.frame_id = "radar";
 	img.header.stamp = ros::Time::now();
 	img.height = bitmap->GetHeight();
 	img.width = bitmap->GetWidth();
 	img.encoding = sensor_msgs::image_encodings::BGRA8;
 	img.is_bigendian = 0; // can this be changed? (from topic radar_image after run radar_monitor_node)
-	img.step = 2048; // where can we get data from? (from topic radar_image after run radar_monitor_node)
+	img.step = img.height*4; // where can we get data from? (from topic radar_image after run radar_monitor_node)
+	// MODIFIED, img.height*4(BGRA)
 	const char *data = reinterpret_cast<const char *>(bitmap->GetBitmap());
 	img.data.assign(data, data+img.step*img.height);
-	imgPubPtr->publish(img);
+
     /* This function gets called as a notification that new data is
      * available in the bitmap and/or the bitmap configuration has changed.
      *
@@ -218,43 +230,44 @@ static void bitmapCallback(SPxScDestBitmap *bitmap, UINT16 changes,
 	 * it, using the various Get() functions in the SPxScDestBitmap
 	 * class to retrieve the new configuration.
 	 */
-	printf("Bitmap configuration changed, flags 0x%04x:\n", changes);
+		printf("Bitmap configuration changed, flags 0x%04x:\n", changes);
 
-	/* Say what changed. */
-	if( changes & SPX_BITMAP_CHANGE_POSITION )
-	{
-	    printf("\tPosition changed.\n");
+		/* Say what changed. */
+		if( changes & SPX_BITMAP_CHANGE_POSITION )
+		{
+			printf("\tPosition changed.\n");
+		}
+		if( changes & SPX_BITMAP_CHANGE_SIZE )
+		{
+			printf("\tSize changed.\n");
+		}
+		if( changes & SPX_BITMAP_CHANGE_VISIBLE )
+		{
+			printf("\tVisibility changed.\n");
+		}
+		if( changes & SPX_BITMAP_CHANGE_VIEW )
+		{
+			printf("\tView changed.\n");
+		}
 	}
-	if( changes & SPX_BITMAP_CHANGE_SIZE )
-	{
-	    printf("\tSize changed.\n");
-	}
-	if( changes & SPX_BITMAP_CHANGE_VISIBLE )
-	{
-	    printf("\tVisibility changed.\n");
-	}
-	if( changes & SPX_BITMAP_CHANGE_VIEW )
-	{
-	    printf("\tView changed.\n");
-	}
-    }
-    if( (box.w > 0) && (box.h > 0) )
-    {
-	/* The contents of the given box have changed.
-	 *
-	 * We simply report the area, but a real program could use the
-	 * new data.
-	 */
 
-	/* Report details of the whole area. */
-	/*printf("New data: pos = (%d,%d), sz = (%d,%d), for %.1f to %.1f deg\n",
-		box.x, box.y, box.w, box.h,
-		((double)startAzi) * 360.0 / 65536.0,
-		((double)endAzi) * 360.0 / 65536.0);
-	fflush(stdout);*/
+	if( (box.w > 0) && (box.h > 0) )
+		{
+		/* The contents of the given box have changed.
+		 *
+		 * We simply report the area, but a real program could use the
+		 * new data.
+		 */
 
-	/* Clear the dirty box. */
-	bitmap->ClearDirtyBox();
+		/* Report details of the whole area. */
+		/*printf("New data: pos = (%d,%d), sz = (%d,%d), for %.1f to %.1f deg\n",
+			box.x, box.y, box.w, box.h,
+			((double)startAzi) * 360.0 / 65536.0,
+			((double)endAzi) * 360.0 / 65536.0);
+		fflush(stdout);*/
+
+		/* Clear the dirty box. */
+		bitmap->ClearDirtyBox();
     }
     return;
 } /* bitmapCallback() */
