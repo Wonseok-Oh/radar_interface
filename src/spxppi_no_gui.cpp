@@ -110,6 +110,12 @@ int main(int argc, char **argv)
 	exit(-1);
     }
 
+    /* Acquire license from hardware dongle */
+    if (SPxLicInit() != SPX_NO_ERROR){
+    	/* Failed to find valid dongle */
+    	printf("WARNING: functionality will be restricted\n");
+    }
+
     /* Create the bitmap, which is the destination for the scan converter */
     SPxScDestBitmap *spxBitmap = new SPxScDestBitmap();
     int bitmapCreated = spxBitmap->Create(max_win_width, max_win_height, SPX_BITMAP_32BITS);
